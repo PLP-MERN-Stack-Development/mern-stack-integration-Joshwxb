@@ -1,78 +1,59 @@
-// server.js - Main server file for the MERN blog application
+import 'dotenv/config'; // Load environment variables from .env file
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import categoryRoutes from './routes/categoryRoutes.js';
+import postRoutes from './routes/postRoutes.js';
+import authRoutes from './routes/authRoutes.js'; // CORRECT: Simple import works after fixing export
+import commentRoutes from './routes/commentRoutes.js'; // <-- NEW: Import Comment Routes
+import errorHandler from './middleware/errorHandler.js'; 
 
-// Import required modules
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
-
-// Import routes
-const postRoutes = require('./routes/posts');
-const categoryRoutes = require('./routes/categories');
-const authRoutes = require('./routes/auth');
-
-// Load environment variables
-dotenv.config();
-
-// Initialize Express app
+// --- Application Setup ---
 const app = express();
 const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// Middleware
+// --- Middleware ---
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); // Allows the server to accept JSON data in the request body
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Log requests in development mode
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
-    next();
-  });
-}
-
-// API routes
-app.use('/api/posts', postRoutes);
+// --- API Routes ---
 app.use('/api/categories', categoryRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes); 
+app.use('/api/auth', authRoutes); // Use Auth Routes
+app.use('/api/comments', commentRoutes); // <-- NEW: Register Comment Routes
 
-// Root route
+// --- MongoDB Connection ---
+const connectDB = async () => {
+    try {
+        await mongoose.connect(MONGODB_URI, {
+            // Options like useNewUrlParser and useUnifiedTopology are deprecated and no longer needed
+        });
+        console.log('✅ MongoDB connected successfully!');
+    } catch (error) {
+        console.error('❌ MongoDB connection failed:', error.message);
+        // Exit process with failure
+        process.exit(1);
+    }
+};
+
+// --- Define Test Route ---
 app.get('/', (req, res) => {
-  res.send('MERN Blog API is running');
+    res.status(200).json({ message: 'MERN Blog API is running!' });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
-    success: false,
-    error: err.message || 'Server Error',
-  });
-});
+// --- Error Handling Middleware (MUST BE LAST MIDDLEWARE BEFORE START SERVER) ---
+app.use(errorHandler); 
 
-// Connect to MongoDB and start server
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Failed to connect to MongoDB', err);
-    process.exit(1);
-  });
+// --- Start Server ---
+const startServer = async () => {
+    // 1. Connect to the Database
+    await connectDB();
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  process.exit(1);
-});
+    // 2. Start the Express server
+    app.listen(PORT, () => {
+        console.log(`📡 Server listening on http://localhost:${PORT}`);
+    });
+};
 
-module.exports = app; 
+startServer();
