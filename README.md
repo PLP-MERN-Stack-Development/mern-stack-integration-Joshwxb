@@ -36,7 +36,7 @@ Follow these steps to get the MERN Blog up and running on your local machine.
 3.  Create a **`.env`** file in the `/server` directory and add your configuration variables:
     ```env
     PORT=5000
-    MONGO_URI="mongodb+srv://olawoore589_db_user:Olajoedii18@cluster01.5btmonn.mongodb.net"
+    MONGO_URI="mongodb+srv://olawoore589_db_user:@cluster01.5btmonn.mongodb.net"
     
     ```
 4.  Start the backend server:
